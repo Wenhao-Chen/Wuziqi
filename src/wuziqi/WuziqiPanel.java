@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
@@ -16,7 +17,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 @SuppressWarnings("serial")
-public class WuziqiPanel extends JPanel implements MouseListener{
+public class WuziqiPanel extends JPanel implements MouseListener, MouseMotionListener{
 
 	private int boardSize;
 	private double margin = 5;
@@ -27,6 +28,7 @@ public class WuziqiPanel extends JPanel implements MouseListener{
 	private double boardWidth, squareWidth, pieceRadius, gridWidth;
 	private boolean hasWinner = false;
 	private ArrayList<String> gameLog = new ArrayList<String>();
+	private int mouseX, mouseY;
 	
 	public WuziqiPanel() {
 		this(10);
@@ -35,6 +37,7 @@ public class WuziqiPanel extends JPanel implements MouseListener{
 	public WuziqiPanel(int i) {
 		this.boardSize = i;
 		addMouseListener(this);
+		addMouseMotionListener(this);
 		pieces = new PieceState[boardSize][boardSize];
 		initWidgets();
 	}
@@ -73,13 +76,11 @@ public class WuziqiPanel extends JPanel implements MouseListener{
 		g2d.setColor(bgColor);
 		g2d.fill(new Rectangle2D.Double(0, 0, getWidth(), getHeight()));
 		
-		// draw current player color
-		if (currentPlayer == PieceState.black)
-			g2d.setColor(Color.black);
-		else if (currentPlayer == PieceState.white)
-			g2d.setColor(Color.white);
-		else g2d.setColor(bgColor);
+		// draw current player color and hovering piece and follows mouse cursor
+		g2d.setColor(currentPlayer == PieceState.black? Color.black : Color.white);
 		g2d.fill(new Ellipse2D.Double(label.getX() + label.getWidth() + 2, label.getY(), label.getHeight(), label.getHeight()));
+		//g2d.fill(new Ellipse2D.Double(Math.max(0, mouseX - pieceRadius), Math.max(0, mouseY - pieceRadius), pieceRadius*2, pieceRadius*2));
+		// draw hovering piece that follows mouse cursor
 		
 		// draw grid
 		g2d.setColor(Color.BLACK);
@@ -96,25 +97,24 @@ public class WuziqiPanel extends JPanel implements MouseListener{
 		
 		// draw pieces
 		for (int x = 0; x < boardSize; x++)
-			for (int y = 0; y < boardSize; y++) {
-				if (pieces[x][y] == null)
-					continue;
-				if (pieces[x][y].color == PieceState.black) {
-					double centerX = gridTopleftX + x*squareWidth;
-					double centerY = gridTopleftY + y*squareWidth;
-					g2d.setColor(Color.black);
-					g2d.fill(new Ellipse2D.Double(centerX - pieceRadius, centerY - pieceRadius, pieceRadius*2, pieceRadius*2));
-				}
-				else if (pieces[x][y].color == PieceState.white) {
-					g2d.setColor(Color.white);
-					double centerX = gridTopleftX + x*squareWidth;
-					double centerY = gridTopleftY + y*squareWidth;
-					g2d.setColor(Color.white);
-					g2d.fill(new Ellipse2D.Double(centerX - pieceRadius, centerY - pieceRadius, pieceRadius*2, pieceRadius*2));
-				}
-			}
+		for (int y = 0; y < boardSize; y++) {
+			if (pieces[x][y] == null)
+				continue;
+			double centerX = gridTopleftX + x*squareWidth;
+			double centerY = gridTopleftY + y*squareWidth;
+			g2d.setColor( pieces[x][y].color == PieceState.black? Color.black : Color.white);
+			g2d.fill(new Ellipse2D.Double(centerX - pieceRadius, centerY - pieceRadius, pieceRadius*2, pieceRadius*2));
+		}
+		
+		if (mouseX >= gridTopleftX-pieceRadius && mouseX <= gridTopleftX+boardWidth+pieceRadius &&
+			mouseY >= gridTopleftY-pieceRadius && mouseY <= gridTopleftY+boardWidth+pieceRadius)
+		{
+			g2d.setColor(currentPlayer == PieceState.black? Color.black : Color.white);
+			g2d.fill(new Ellipse2D.Double(Math.max(0, mouseX - pieceRadius), Math.max(0, mouseY - pieceRadius), pieceRadius*2, pieceRadius*2));
+		}
 		
 	}
+	
 
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -299,6 +299,17 @@ public class WuziqiPanel extends JPanel implements MouseListener{
 		if (currentPlayer == PieceState.black)
 			currentPlayer = PieceState.white;
 		else currentPlayer = PieceState.black;
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		mouseX = e.getX();
+		mouseY = e.getY();
+		repaint();
+		//System.out.printf("x/y = %d/%d\n", mouseX, mouseY);
 	}
 
 }
